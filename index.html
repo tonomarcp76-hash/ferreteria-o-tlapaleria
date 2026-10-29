@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔩 Ferretería y Tlapalería - POS</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: Arial, sans-serif; }
+        body { background: #f0f4f8; color: #1e293b; min-height: 100vh; padding: 20px; }
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; width: 100%; }
+        header { background: #1565c0; color: white; padding: 20px; text-align: center; border-radius: 10px; margin-bottom: 20px; }
+        .header-usuario { display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; }
+        .btn-salir { background: #c62828; color: white; border: none; padding: 8px 15px; border-radius: 5px; cursor: pointer; }
+        .btn-salir:hover { background: #a01a1a; }
+        nav { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+        nav button { 
+            background: #1976d2; 
+            font-size: 14px; 
+            color: white; 
+            border: none; 
+            padding: 10px 15px; 
+            border-radius: 5px; 
+            cursor: pointer; 
+        }
+        nav button.activo { background: #0d47a1; border: 2px solid #90caf9; }
+        .seccion { 
+            background: white; 
+            padding: 20px; 
+            border-radius: 10px; 
+            margin-bottom: 20px; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1); 
+        }
+        h2 { color: #1565c0; margin-bottom: 15px; border-bottom: 2px solid #bbdefb; padding-bottom: 8px; }
+        button:hover { background: #1565c0; }
+        button.rojo { background: #e53935; }
+        button.rojo:hover { background: #c62828; }
+        button.verde { background: #2e7d32; }
+        button.verde:hover { background: #1b5e20; }
+        input, select { padding: 10px; border: 1px solid #90caf9; border-radius: 5px; margin: 5px; width: 100%; max-width: 350px; font-size: 15px; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 15px; }
+        .producto { background: #e3f2fd; padding: 12px; border-radius: 8px; border-left: 4px solid #1565c0; }
+        .producto.herramientas { border-left-color: #ff6f00; background: #fff3e0; }
+        .producto.plomeria { border-left-color: #00897b; background: #e0f2f1; }
+        .producto.electricidad { border-left-color: #fdd835; background: #fffde7; }
+        .producto.pintura { border-left-color: #7b1fa2; background: #f3e5f5; }
+        .producto.fijacion { border-left-color: #455a64; background: #eceff1; }
+        .carrito-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px dashed #ccc; flex-wrap: wrap; gap: 8px; }
+        .total { font-size: 22px; font-weight: bold; text-align: right; margin-top: 15px; color: #1565c0; }
+        .ticket { 
+            background: #fff; 
+            border: 1px dashed #888; 
+            padding: 20px; 
+            margin-top: 20px; 
+            font-family: monospace; 
+            font-size: 13px; 
+            display: none; 
+        }
+        .fila-ticket { display: flex; justify-content: space-between; padding: 2px 0; }
+        .oculto { display: none !important; }
+        .mensaje { padding: 10px; border-radius: 5px; margin: 10px 0; display: none; max-width: 350px; }
+        .exito { background: #d4edda; color: #155724; display: block; }
+        .error { background: #f8d7da; color: #721c24; display: block; }
+        .tabla { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        .tabla th, .tabla td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; }
+        .tabla th { background: #bbdefb; color: #1e293b; }
+        .resumen-caja { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin: 20px 0; }
+        .caja-card { background: #e3f2fd; padding: 15px; border-radius: 8px; text-align: center; }
+        .caja-card h3 { font-size: 14px; color: #1565c0; margin-bottom: 5px; }
+        .caja-card .valor { font-size: 24px; font-weight: bold; }
+        .fecha-filtro { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin-bottom: 15px; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); justify-content: center; align-items: center; }
+        .modal.activo { display: flex; }
+        .modal-contenido { background: white; padding: 25px; border-radius: 10px; max-width: 500px; width: 90%; position: relative; }
+        .cerrar-modal { position: absolute; right: 15px; top: 10px; font-size: 24px; cursor: pointer; color: #888; }
+        .cerrar-modal:hover { color: #000; }
+        .btn-agregar { background: #bbdefb; color: #1e293b; padding: 5px 10px; font-size: 13px; border: none; border-radius: 3px; cursor: pointer; }
+        .btn-quitar { background: #e53935; padding: 2px 8px; font-size: 12px; border: none; border-radius: 3px; cursor: pointer; color: white; }
+        .cantidad-controles { display: flex; align-items: center; gap: 8px; }
+        .cantidad-controles button { padding: 2px 8px; margin: 0; }
+        .agotado { color: #c62828; font-weight: bold; }
+        
+        /* LOGIN */
+        .login-pantalla { display: flex; justify-content: center; align-items: center; min-height: 80vh; }
+        .login-caja { 
+            background: white; 
+            padding: 30px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.15); 
+            width: 100%; 
+            max-width: 400px; 
+        }
+        .login-caja h2 { text-align: center; border: none; }
+        .login-caja button { width: 100%; margin-top: 10px; }
+        .enlace { background: none; border: none; color: #1565c0; cursor: pointer; text-decoration: underline; padding: 0; margin-top: 15px; }
+        .enlace:hover { color: #0d47a1; background: none; }
+        
+        @media print {
+            body * { visibility: hidden; }
+            .ticket, .ticket * { visibility: visible; }
+            .ticket { position: absolute; left: 0; top: 0; width: 80%; max-width: 300px; margin: 0 auto; border: none; }
+            .ticket button { display: none !important; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="pantalla-login" class="login-pantalla">
+    <div class="login-caja">
+        <h2>🔩 Iniciar Sesión</h2>
+        <p style="text-align:center; color:#666; margin-bottom:20px;">Ferretería y Tlapalería</p>
+        
+        <div id="form-login">
+            <div>
+                <label><strong>Usuario:</strong></label><br>
+                <input type="text" id="usuario" placeholder="Escribe tu usuario">
+            </div>
+            <div>
+                <label><strong>Contraseña:</strong></label><br>
+                <input type="password" id="clave" placeholder="Escribe tu contraseña">
+            </div>
+            <div id="msg-login" class="mensaje"></div>
+            <br>
+            <button onclick="iniciarSesion()" class="verde">✅ Entrar al Sistema</button>
+            <p style="text-align:center;">¿No tienes cuenta? <button class="enlace" onclick="mostrarRegistro()">Regístrate aquí</button></p>
+        </div>
+        
+        <div id="form-registro" class="oculto">
+            <h3 style="text-align:center; margin-bottom:15px;">📝 Nuevo Usuario</h3>
+            <div>
+                <label><strong>Nombre Completo:</strong></label><br>
+                <input type="text" id="reg-nombre" placeholder="Tu nombre completo">
+            </div>
+            <div>
+                <label><strong>Usuario:</strong></label><br>
+                <input type="text" id="reg-usuario" placeholder="Elige tu usuario">
+            </div>
+            <div>
+                <label><strong>Contraseña:</strong></label><br>
+                <input type="password" id="reg-clave" placeholder="Crea tu contraseña">
+            </div>
+            <div id="msg-registro" class="mensaje"></div>
+            <br>
+            <button onclick="registrarUsuario()" class="verde">✅ Crear Cuenta</button>
+            <p style="text-align:center;">¿Ya tienes cuenta? <button class="enlace" onclick="mostrarLogin()">Inicia sesión</button></p>
+        </div>
+    </div>
+</div>
+
+<div id="sistema" class="oculto">
+    <header class="header-usuario">
+        <div>
+            <h1>🔩 FERRETERÍA Y TLAPALERÍA</h1>
+            <p>Bienvenido, <span id="nombre-usuario"></span> 👋</p>
+        </div>
+        <button class="btn-salir" onclick="cerrarSesion()">🚪 Cerrar Sesión</button>
+    </header>
+
+    <div class="container">
+        <nav>
+            <button id="btn-ventas" class="activo" onclick="mostrarSeccion('ventas')">🛒 Ventas</button>
+            <button id="btn-historial" onclick="mostrarSeccion('historial')">📊 Historial</button>
+            <button id="btn-caja" onclick="mostrarSeccion('caja')">💰 Cierre de Caja</button>
+            <button id="btn-inventario" onclick="mostrarSeccion('inventario')">📦 Inventario</button>
+            <button id="btn-nuevo-producto" onclick="mostrarSeccion('nuevo-producto')">➕ Agregar Producto</button>
+        </nav>
+
+        <div id="sec-ventas" class="seccion">
+            <h2>📋 Lista de Productos</h2>
+            <div style="margin-bottom:15px;">
+                <input type="text" id="buscar-producto" placeholder="🔍 Buscar por nombre, código o marca..." oninput="filtrarProductos()">
+            </div>
+            <div id="sin-productos" style="color:#888; padding:20px; text-align:center;">
+                No hay productos registrados.<br>
+                Ve a "Agregar Producto" para crear los tuyos.
+            </div>
+            <div class="grid" id="lista-productos"></div>
+
+            <h2 style="margin-top:30px;">🛒 Carrito de Compra</h2>
+            <div id="carrito-vacio" style="color:#888; padding:15px; text-align:center;">El carrito está vacío. Agrega productos para empezar.</div>
+            <div id="items-carrito"></div>
+            <div class="total">Total: $<span id="total">0.00</span></div>
+            <br>
+            <button onclick="limpiarCarrito()" class="rojo">🗑️ Cancelar Venta</button>
+            <button onclick="abrirModalPago()">💳 Cobrar</button>
+
+            <div class="ticket" id="ticket">
+                <h3 style="text-align:center;">FERRETERÍA Y TLAPALERÍA</h3>
+                <p style="text-align:center;">Dirección de tu negocio<br>Tel: 55-1234-5678</p>
+                <hr style="border:1px dashed #999; margin:10px 0;">
+                <p>Ticket Nº: <span id="t-num"></span></p>
+                <p>Fecha: <span id="t-fecha"></span></p>
+                <p>Cajero: <span id="t-cajero"></span></p>
+                <hr style="border:1px dashed #999; margin:10px 0;">
+                <div id="t-items"></div>
+                <hr style="border:1px dashed #999; margin:10px 0;">
+                <p class="fila-ticket"><strong>TOTAL: $<span id="t-total"></span></strong></p>
+                <p class="fila-ticket">Pago con: $<span id="t-pago"></span></p>
+                <p class="fila-ticket">Cambio: $<span id="t-cambio"></span></p>
+                <hr style="border:1px dashed #999; margin:10px 0;">
+                <p style="text-align:center;">¡Gracias por su compra!<br>Vuelva pronto</p>
+                <br>
+                <button onclick="window.print()">🖨️ Imprimir Ticket</button>
+            </div>
+        </div>
+
+        <div id="modal-cantidad" class="modal">
+            <div class="modal-contenido">
+                <span class="cerrar-modal" onclick="cerrarModalCantidad()">&times;</span>
+                <h3 id="prod-nombre"></h3>
+                <p style="font-size:14px; color:#666;" id="prod-marca"></p>
+                <p>Precio: $<span id="prod-precio"></span> / <span id="prod-medida"></span></p>
+                <p>Disponible: <span id="prod-stock"></span> unidades</p>
+                <div>
+                    <label><strong>Cantidad:</strong></label><br>
+                    <input type="number" min="1" id="cantidad-ingresada" placeholder="1" oninput="calcularSubtotal()">
+                </div>
+                <p style="font-size:18px; margin-top:10px;">Subtotal: <strong>$<span id="subtotal-calculado">0.00</span></strong></p>
+                <br>
+                <button onclick="confirmarAgregar()" class="verde">✅ Agregar al carrito</button>
+                <button onclick="cerrarModalCantidad()">Cancelar</button>
+            </div>
+        </div>
+
+        <div id="modal-pago" class="modal">
+            <div class="modal-contenido">
+                <span class="cerrar-modal" onclick="cerrarModalPago()">&times;</span>
+                <h2>💰 Pago</h2>
+                <p style="font-size:18px; margin:15px 0;">Total a pagar: <strong>$<span id="modal-total"></span></strong></p>
+                <div>
+                    <label><strong>Recibido del cliente:</strong></label><br>
+                    <input type="number" step="0.01" id="pago-recibido" placeholder="0.00" oninput="calcularCambio()">
+                </div>
+                <p style="font-size:16px; margin-top:15px;">Cambio: <strong>$<span id="pago-cambio">0.00</span></strong></p>
+                <br>
+                <button onclick="confirmarVenta()" class="verde">✅ Confirmar Venta</button>
+                <button onclick="cerrarModalPago()">Cancelar</button>
+            </div>
+        </div>
+
+        <div id="sec-historial" class="seccion oculto">
+            <h2>📊 Historial de Ventas</h2>
+            <div class="fecha-filtro">
+                <label>Desde:</label>
+                <input type="date" id="fecha-desde">
+                <label>Hasta:</label>
+                <input type="date" id="fecha-hasta">
+                <button onclick="filtrarHistorial()">🔍 Filtrar</button>
+                <button onclick="verTodoHistorial()">📋 Ver Todo</button>
+            </div>
+            <div id="historial-vacio" style="text-align:center; padding:30px; color:#888;">No hay ventas registradas aún</div>
+            <table class="tabla" id="tabla-historial" style="display:none;">
+                <thead>
+                    <tr>
+                        <
+-cambio').textContent = '0.00';
+    document.getElementById('modal-pago').classList.add('activo');
+}
+function cerrarModalPago() {
+    document.getElementById('modal-pago').classList.remove('activo');
+}
+function calcularCambio() {
+    const total = calcularTotal();
+    const recibido = parseFloat(document.getElementById('pago-recibido').value) || 0;
+    const cambio = recibido - total;
+    document.getElementById('pago-cambio').textContent = cambio >= 0 ? cambio.toFixed(2) : '0.00';
+}
+function confirmarVenta() {
+    const total = calcularTotal();
+    const recibido = parseFloat(document.getElementById('pago-recibido').value) || 0;
+    if (recibido < total) return alert('El pago no cubre el total');
+
+    // Descontar del inventario
+    carrito.forEach(item => {
+        const prod = productos.find(p => p.codigo === item.codigo);
+        if (prod) prod.stock -= item.cantidad;
+    });
+    localStorage.setItem('productosFerreteria', JSON.stringify(productos));
+
+    const cambio = recibido - total;
+    const fecha = new Date();
+    const venta = {
+        id: numeroTicket++,
+        fecha: fecha.toLocaleString('es-MX'),
+        total,
+        items: [...carrito],
+        cajero: usuarioActivo.nombre
+    };
+    ventas.push(venta);
+    localStorage.setItem('ventasFerreteria', JSON.stringify(ventas));
+
+    // Imprimir ticket
+    document.getElementById('t-num').textContent = venta.id;
+    document.getElementById('t-fecha').textContent = venta.fecha;
+    document.getElementById('t-cajero').textContent = venta.cajero;
+    document.getElementById('t-total').textContent = total.toFixed(2);
+    document.getElementById('t-pago').textContent = recibido.toFixed(2);
+    document.getElementById('t-cambio').textContent = cambio.toFixed(2);
+
+    const tItems = document.getElementById('t-items');
+    tItems.innerHTML = '';
+    venta.items.forEach(i => {
+        tItems.innerHTML += `<p class="fila-ticket">${i.nombre} ${i.cantidad}${i.unidad} × $${i.precio.toFixed(2)} <span>$${(i.precio*i.cantidad).toFixed(2)}</span></p>`;
+    });
+    document.getElementById('ticket').style.display = 'block';
+
+    cerrarModalPago();
+    carrito = [];
+    actualizarCarrito();
+    renderizarProductos();
+    actualizarCaja();
+}
+
+// ---------- HISTORIAL ----------
+function cargarHistorial(lista = ventas) {
+    const vacio = document.getElementById('historial-vacio');
+    const tabla = document.getElementById('tabla-historial');
+    const cuerpo = document.getElementById('cuerpo-historial');
+    if (lista.length === 0) {
+        vacio.style.display = 'block';
+        tabla.style.display = 'none';
+        return;
+    }
+    vacio.style.display = 'none';
+    tabla.style.display = 'table';
+    cuerpo.innerHTML = '';
+    lista.forEach(v => {
+        cuerpo.innerHTML += `
+            <tr>
+                <td>${v.id}</td>
+                <td>${v.fecha}</td>
+                <td>${v.cajero}</td>
+                <td>$${v.total.toFixed(2)}</td>
+                <td>${v.items.map(i => `${i.nombre} ×${i.cantidad}`).join(', ')}</td>
+            </tr>
+        `;
+    });
+}
+function filtrarHistorial() {
+    const desde = new Date(document.getElementById('fecha-desde').value);
+    const hasta = new Date(document.getElementById('fecha-hasta').value);
+    hasta.setHours(23,59,59);
+    cargarHistorial(ventas.filter(v => {
+        const f = new Date(v.fecha);
+        return f >= desde && f <= hasta;
+    }));
+}
+function verTodoHistorial() { cargarHistorial(); }
+
+// ---------- INVENTARIO ----------
+function actualizarInventario(lista = productos) {
+    const cuerpo = document.getElementById('cuerpo-inventario');
+    cuerpo.innerHTML = '';
+    lista.forEach(p => {
+        cuerpo.innerHTML += `
+            <tr>
+                <td>${p.codigo}</td>
+                <td>${p.nombre}</td>
+                <td>${p.marca}</td>
+                <td>${p.categoria}</td>
+                <td>$${p.precio.toFixed(2)}</td>
+                <td class="${p.stock <= 5 ? 'agotado' : ''}">${p.stock}</td>
+                <td><button class="btn-quitar" onclick="eliminarProducto('${p.codigo}')">🗑️</button></td>
+            </tr>
+        `;
+    });
+}
+function filtrarInventario() {
+    const t = document.getElementById('buscar-inv').value.toLowerCase();
+    actualizarInventario(productos.filter(p => 
+        p.nombre.toLowerCase().includes(t) || p.codigo.toLowerCase().includes(t) || p.marca.toLowerCase().includes(t)
+    ));
+}
+function eliminarProducto(cod) {
+    if (!confirm('¿Eliminar este producto?')) return;
+    productos = productos.filter(p => p.codigo !== cod);
+    localStorage.setItem('productosFerreteria', JSON.stringify(productos));
+    renderizarProductos();
+    actualizarInventario();
+}
+
+// ---------- CAJA ----------
+function actualizarCaja() {
+    const hoy = new Date().toLocaleDateString('es-MX');
+    const hoyVentas = ventas.filter(v => v.fecha.includes(hoy));
+    document.getElementById('caja-ventas').textContent = hoyVentas.length;
+    document.getElementById('caja-total').textContent = '$' + hoyVentas.reduce((s, v) => s + v.total, 0).toFixed(2);
+}
+function cerrarCaja() {
+    if (!confirm('¿Cerrar caja? No se puede deshacer.')) return;
+    const hoy = new Date().toLocaleDateString('es-MX');
+    const hoyVentas = ventas.filter(v => v.fecha.includes(hoy));
+    const total = hoyVentas.reduce((s, v) => s + v.total, 0);
+    const cierre = { fecha: hoy, cantidad: hoyVentas.length, total };
+    cierres.push(cierre);
+    localStorage.setItem('cierresFerreteria', JSON.stringify(cierres));
+    alert(`Cierre: ${cierre.cantidad} ventas — Total $${cierre.total.toFixed(2)}`);
+    document.getElementById('ultimo-cierre').innerHTML = `Fecha: ${cierre.fecha} — Ventas: ${cierre.cantidad} — Total: $${cierre.total.toFixed(2)}`;
+}
+function exportarCaja() {
+    const hoy = new Date().toLocaleDateString('es-MX');
+    const hoyVentas = ventas.filter(v => v.fecha.includes(hoy));
+    let texto = `CIERRE DE CAJA - FERRETERÍA\nFecha: ${hoy}\n${'='.repeat(40)}\n`;
+    hoyVentas.forEach(v => {
+        texto += `Ticket ${v.id} | ${v.fecha} | $${v.total.toFixed(2)}\n`;
+        v.items.forEach(i => texto += `  - ${i.nombre} ${i.cantidad}${i.unidad} × $${i.precio.toFixed(2)} = $${(i.precio*i.cantidad).toFixed(2)}\n`);
+    });
+    texto += `${'='.repeat(40)}\nTOTAL: $${hoyVentas.reduce((s,v)=>s+v.total,0).toFixed(2)}`;
+    const blob = new Blob([texto], {type:'text/plain'});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `cierre-ferreteria-${hoy}.txt`;
+    a.click();
+}
+
+// ---------- INICIO ----------
+document.addEventListener('DOMContentLoaded', () => {
+    const sesion = JSON.parse(localStorage.getItem('sesionActivaFerreteria'));
+    if (sesion) {
+        usuarioActivo = sesion;
+        document.getElementById('pantalla-login').classList.add('oculto');
+        document.getElementById('sistema').classList.remove('oculto');
+        document.getElementById('nombre-usuario').textContent = sesion.nombre;
+        cargarDatosGuardados();
+        renderizarProductos();
+        actualizarCaja();
+        document.getElementById('caja-fecha').textContent = new Date().toLocaleDateString('es-MX');
+    }
+});
+</script>
+</body>
+</html>
